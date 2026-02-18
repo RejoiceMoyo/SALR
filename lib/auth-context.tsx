@@ -34,19 +34,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
-    const foundUser = await UsersStore.getByEmail(email)
-    if (!foundUser) {
-      return { success: false, error: "User not found" }
+    try {
+      const foundUser = await UsersStore.getByEmail(email)
+      if (!foundUser) {
+        return { success: false, error: "User not found. Please check your email." }
+      }
+      if (foundUser.password !== password) {
+        return { success: false, error: "Invalid password" }
+      }
+      if (foundUser.status !== "active") {
+        return { success: false, error: "Account is inactive" }
+      }
+      setUser(foundUser)
+      sessionStorage.setItem("sms_current_user", foundUser.id)
+      return { success: true }
+    } catch (err: any) {
+      console.error("Login error:", err)
+      return { success: false, error: "Unable to connect to the server. Please try again." }
     }
-    if (foundUser.password !== password) {
-      return { success: false, error: "Invalid password" }
-    }
-    if (foundUser.status !== "active") {
-      return { success: false, error: "Account is inactive" }
-    }
-    setUser(foundUser)
-    sessionStorage.setItem("sms_current_user", foundUser.id)
-    return { success: true }
   }, [])
 
   const logout = useCallback(() => {
