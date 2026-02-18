@@ -27,6 +27,8 @@ export function downloadTemplate(type: 'students' | 'teachers') {
       'Dad no',
       'Guardian number',
       'Emergency contact',
+      'Driver name',
+      'Driver contact',
       'Address'
     ]];
   } else {

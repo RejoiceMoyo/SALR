@@ -328,6 +328,8 @@ export function StudentManagement() {
         const dadPhone = row.dad_no
         const guardianPhone = row.guardian_number
         const emergencyContact = row.emergency_contact
+        const driverName = row.driver_name
+        const driverContact = row.driver_contact
         const address = row.address
 
         // Validate required fields
@@ -357,6 +359,8 @@ export function StudentManagement() {
         const additionalInfo: Record<string, any> = {}
         if (dadPhone) additionalInfo.dad_phone = dadPhone
         if (emergencyContact) additionalInfo.emergency_contact = emergencyContact
+        if (driverName) additionalInfo.driver_name = driverName
+        if (driverContact) additionalInfo.driver_contact = driverContact
 
         // Build parent contact (from mom phone)
         const parentContact = {
@@ -462,18 +466,19 @@ export function StudentManagement() {
           <TableHeader>
             <TableRow className="border-b">
               <TableHead className="font-semibold text-foreground">Student No</TableHead>
+              <TableHead className="font-semibold text-foreground">Surname</TableHead>
               <TableHead className="font-semibold text-foreground">Name</TableHead>
               <TableHead className="font-semibold text-foreground">Class</TableHead>
-              <TableHead className="font-semibold text-foreground hidden md:table-cell">Parent Contact</TableHead>
-              <TableHead className="font-semibold text-foreground hidden lg:table-cell">Allergies</TableHead>
+              <TableHead className="font-semibold text-foreground">Gender</TableHead>
               <TableHead className="font-semibold text-foreground">Status</TableHead>
+              <TableHead className="font-semibold text-foreground">Allergies</TableHead>
               <TableHead className="font-semibold text-foreground text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredStudents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   No students found
                 </TableCell>
               </TableRow>
@@ -482,21 +487,17 @@ export function StudentManagement() {
                 return (
                   <TableRow key={student.id} className="border-b last:border-b-0">
                     <TableCell className="font-medium text-foreground">{student.studentNumber}</TableCell>
-                    <TableCell className="text-foreground">{studentFullName(student)}</TableCell>
+                    <TableCell className="text-foreground">{student.lastName}</TableCell>
+                    <TableCell className="text-foreground">{student.firstName}</TableCell>
                     <TableCell className="text-foreground">{getClassName(student.classId)}</TableCell>
-                    <TableCell className="hidden md:table-cell text-foreground">
-                      <div className="flex flex-col">
-                        <span>{student.parentContact.fullName}</span>
-                        <span className="text-xs text-muted-foreground">{student.parentContact.phone}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-foreground">
-                      {student.allergies ? student.allergies : "-"}
-                    </TableCell>
+                    <TableCell className="text-foreground">{student.gender}</TableCell>
                     <TableCell>
                       <Badge variant={student.status === "active" ? "default" : "secondary"}>
                         {student.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-foreground">
+                      {student.allergies ? student.allergies : "-"}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
