@@ -306,41 +306,32 @@ export function StudentManagement() {
     let skipCount = 0
 
     try {
-      const standardFields = [
-        'student_number', 'id', 'student_id', 'no',
-        'first_name', 'firstname', 'name',
-        'last_name', 'lastname',
-        'class', 'class_name', 'grade', 'class_id',
-        'dob', 'date_of_birth', 'birthday',
-        'gender', 'sex',
-        'parent_name', 'parent_full_name', 'guardian_name',
-        'parent_phone', 'parent_contact', 'phone',
-        'address'
-      ]
-
       for (const item of data) {
-        // Normalize keys
+        // Normalize keys to lowercase with underscores
         const row: any = {}
-        const additionalInfo: Record<string, any> = {}
-        
         Object.keys(item).forEach(key => {
           const normalizedKey = key.toLowerCase().replace(/\s+/g, '_')
           row[normalizedKey] = item[key]
-          if (!standardFields.includes(normalizedKey)) {
-            additionalInfo[key] = item[key]
-          }
         })
 
-        const studentNumber = row.student_number || row.id || row.student_id || row.no
-        const firstName = row.first_name || row.firstname || row.name?.split(' ')[0]
-        const lastName = row.last_name || row.lastname || row.name?.split(' ').slice(1).join(' ')
-        const classRef = row.class || row.class_name || row.grade || row.class_id
-        const dob = row.dob || row.date_of_birth || row.birthday
-        const gender = row.gender || row.sex
-        const parentName = row.parent_name || row.parent_full_name || row.guardian_name
-        const parentPhone = row.parent_phone || row.parent_contact || row.phone
+        // Map fields according to user's order
+        const studentNumber = row.student_number
+        const lastName = row.surname
+        const firstName = row.name
+        const classRef = row.class
+        const gender = row.gender
+        const status = String(row.status || "active").toLowerCase() as "active" | "inactive" | "archived"
+        const allergies = row.allergies
+        const medicalNotes = row.medical_notes
+        const dob = row.date_of_birth
+        const momPhone = row.mom_no
+        const dadPhone = row.dad_no
+        const guardianPhone = row.guardian_number
+        const emergencyContact = row.emergency_contact
+        const address = row.address
 
-        if (!firstName || !lastName || !studentNumber) {
+        // Validate required fields
+        if (!studentNumber || !firstName || !lastName) {
           skipCount++
           continue
         }
@@ -362,6 +353,25 @@ export function StudentManagement() {
           if (foundClass) finalClassId = foundClass.id
         }
 
+        // Build additional info for extra fields
+        const additionalInfo: Record<string, any> = {}
+        if (dadPhone) additionalInfo.dad_phone = dadPhone
+        if (emergencyContact) additionalInfo.emergency_contact = emergencyContact
+
+        // Build parent contact (from mom phone)
+        const parentContact = {
+          fullName: "Mother", // Parent name not provided in template
+          relationship: "Mother",
+          phone: String(momPhone || ""),
+        }
+
+        // Build guardian contact (from guardian phone if provided)
+        const guardianContact = guardianPhone ? {
+          fullName: "Guardian",
+          relationship: "Guardian",
+          phone: String(guardianPhone),
+        } : undefined
+
         const payload: Omit<Student, "id"> = {
           studentNumber: String(studentNumber),
           firstName: String(firstName),
@@ -369,13 +379,12 @@ export function StudentManagement() {
           classId: finalClassId,
           dob: dob ? new Date(dob).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           gender: String(gender || "Other"),
-          address: String(row.address || ""),
-          status: "active",
-          parentContact: {
-            fullName: String(parentName || "Parent"),
-            relationship: "Parent",
-            phone: String(parentPhone || ""),
-          },
+          address: String(address || ""),
+          allergies: allergies ? String(allergies) : undefined,
+          medicalNotes: medicalNotes ? String(medicalNotes) : undefined,
+          status: (['active', 'inactive', 'archived'].includes(status) ? status : 'active') as any,
+          parentContact,
+          guardianContact,
           additionalInfo
         }
 

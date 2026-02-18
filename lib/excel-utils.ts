@@ -10,9 +10,28 @@ export async function parseExcel(file: File): Promise<any[]> {
 }
 
 export function downloadTemplate(type: 'students' | 'teachers') {
-  const headers = type === 'students' 
-    ? [['first_name', 'last_name', 'email', 'gender', 'date_of_birth', 'grade', 'section']]
-    : [['first_name', 'last_name', 'email', 'phone', 'subject', 'qualification']];
+  let headers: string[][] = [];
+  
+  if (type === 'students') {
+    headers = [[
+      'Student number',
+      'Surname',
+      'Name',
+      'Class',
+      'Gender',
+      'Status',
+      'Allergies',
+      'Medical Notes',
+      'Date of Birth',
+      'Mom no',
+      'Dad no',
+      'Guardian number',
+      'Emergency contact',
+      'Address'
+    ]];
+  } else {
+    headers = [['first_name', 'last_name', 'email', 'phone', 'subject', 'qualification']];
+  }
   
   const ws = XLSX.utils.aoa_to_sheet(headers);
   const wb = XLSX.utils.book_new();
