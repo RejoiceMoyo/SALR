@@ -32,18 +32,17 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left Side - Image */}
-      <div className="hidden lg:flex lg:w-1/2 items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700 p-12">
-        <img
-          src="https://cdn.vectorstock.com/i/preview-1x/31/05/colored-children-silhouettes-vector-12473105.jpg"
-          alt="Children silhouettes"
-          className="w-full max-w-lg rounded-2xl shadow-2xl"
-        />
-      </div>
+      {/* Left Side - Image taking 2/3 */}
+      <div
+        className="hidden lg:block lg:w-2/3 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url('https://i.pinimg.com/736x/03/62/83/0362832ba1b66019cca7b7e143084795.jpg')",
+        }}
+      />
 
-      {/* Right Side - Login */}
-      <div className="flex w-full lg:w-1/2 items-center justify-center p-6">
-        <Card className="w-full max-w-md">
+      {/* Right Side - Login taking 1/3 */}
+      <div className="flex w-full lg:w-1/3 items-center justify-center p-6">
+        <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <GraduationCap className="h-8 w-8" />
