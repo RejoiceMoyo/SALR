@@ -23,6 +23,7 @@ CREATE TABLE teachers (
   user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   phone TEXT,
   signature_image TEXT,
+  additional_info JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -63,6 +64,8 @@ CREATE TABLE students (
   
   -- Guardian contact (optional, embedded JSON)
   guardian_contact JSONB,
+  
+  additional_info JSONB DEFAULT '{}'::jsonb,
   
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

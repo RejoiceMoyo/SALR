@@ -18,6 +18,7 @@ import type { Teacher, SchoolClass, Student } from "@/lib/store"
 import { Plus, Pencil, Search, Eye, Copy, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
+import { ImportExcelButton } from "@/components/import-excel-button"
 
 function generateRandomPassword(length: number = 12): string {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
@@ -209,6 +210,69 @@ export function TeacherManagement() {
     }))
   }
 
+  async function handleBulkImport(data: any[]) {
+    setSaving(true)
+    let successCount = 0
+    let skipCount = 0
+
+    try {
+      for (const item of data) {
+        const name = item.name || item.Name || item.fullname || item["Full Name"]
+        const email = item.email || item.Email
+        const phone = item.phone || item.Phone || item.telephone || item.Mobile
+        const status = String(item.status || item.Status || "active").toLowerCase() as "active" | "inactive" | "archived"
+
+        if (!name || !email) {
+          skipCount++
+          continue
+        }
+
+        // Check if email already exists
+        const existingUser = await UsersStore.getByEmail(String(email))
+        if (existingUser) {
+          skipCount++
+          continue
+        }
+
+        const randomPassword = generateRandomPassword(12)
+        
+        // Collect extra fields
+        const standardFields = ['name', 'Name', 'fullname', 'Full Name', 'email', 'Email', 'phone', 'Phone', 'telephone', 'Mobile', 'status', 'Status']
+        const additionalInfo: Record<string, any> = {}
+        Object.keys(item).forEach(key => {
+          if (!standardFields.includes(key)) {
+            additionalInfo[key] = item[key]
+          }
+        })
+
+        const newUser = await UsersStore.add({ 
+          name: String(name), 
+          email: String(email), 
+          password: randomPassword, 
+          role: "teacher", 
+          status: (['active', 'inactive', 'archived'].includes(status) ? status : 'active') as any
+        })
+        
+        await TeachersStore.add({ 
+          userId: newUser.id, 
+          phone: phone ? String(phone) : undefined,
+          assignedClasses: [],
+          additionalInfo,
+        })
+        
+        successCount++
+      }
+      
+      toast.success(`Import complete: ${successCount} added, ${skipCount} skipped`)
+      loadData()
+    } catch (error) {
+      toast.error("Bulk import failed partially")
+      console.error(error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function getStudentCount(teacher: Teacher) {
     const teacherClassIds = teacher.assignedClasses
     return students.filter((s) => teacherClassIds.includes(s.classId)).length
@@ -229,7 +293,15 @@ export function TeacherManagement() {
           <h2 className="text-2xl font-bold text-foreground">Teachers</h2>
           <p className="text-sm text-muted-foreground mt-1">{isAdmin ? "Manage teacher records. Editing requires password confirmation." : "View teacher records."}</p>
         </div>
-        {isAdmin && <Button onClick={handleAdd} className="gap-2"><Plus className="h-4 w-4" />Add Teacher</Button>}
+        {isAdmin && (
+          <div className="flex gap-2">
+            <ImportExcelButton type="teachers" onImport={handleBulkImport} />
+            <Button onClick={handleAdd} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Teacher
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="relative">

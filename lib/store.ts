@@ -31,6 +31,7 @@ export interface Student {
   parentContact: StudentContact
   guardianContact?: StudentContact
   status: "active" | "inactive" | "archived"
+  additionalInfo?: Record<string, any>
 }
 
 // Teacher combines data from users + teachers tables
@@ -43,6 +44,7 @@ export interface Teacher {
   assignedClasses: string[] // from teacher_classes junction
   status: "active" | "inactive" | "archived" // from users.status
   signatureImage?: string // from teachers.signature_image
+  additionalInfo?: Record<string, any>
 }
 
 export interface SchoolClass {
@@ -205,6 +207,7 @@ export const StudentsStore = {
       ...toCamelCase(row),
       parentContact: row.parent_contact,
       guardianContact: row.guardian_contact,
+      additionalInfo: row.additional_info,
     }))
   },
   
@@ -215,6 +218,7 @@ export const StudentsStore = {
       ...toCamelCase(data),
       parentContact: data.parent_contact,
       guardianContact: data.guardian_contact,
+      additionalInfo: data.additional_info,
     } : null
   },
   
@@ -233,9 +237,11 @@ export const StudentsStore = {
       ...toSnakeCase(student),
       parent_contact: student.parentContact,
       guardian_contact: student.guardianContact,
+      additional_info: student.additionalInfo || {},
     }
     delete dbRow.parent_contact_camel
     delete dbRow.guardian_contact_camel
+    delete dbRow.additional_info_camel
     
     const { data, error } = await supabase
       .from("students")
@@ -247,6 +253,7 @@ export const StudentsStore = {
       ...toCamelCase(data),
       parentContact: data.parent_contact,
       guardianContact: data.guardian_contact,
+      additionalInfo: data.additional_info,
     }
   },
   
@@ -254,6 +261,12 @@ export const StudentsStore = {
     const dbUpdates: any = toSnakeCase(updates)
     if (updates.parentContact) dbUpdates.parent_contact = updates.parentContact
     if (updates.guardianContact) dbUpdates.guardian_contact = updates.guardianContact
+    if (updates.additionalInfo) dbUpdates.additional_info = updates.additionalInfo
+    
+    // Remove individual fields if they were updated via objects above
+    delete dbUpdates.parent_contact_camel
+    delete dbUpdates.guardian_contact_camel
+    delete dbUpdates.additional_info_camel
     
     const { error } = await supabase
       .from("students")
@@ -311,6 +324,7 @@ export const TeachersStore = {
           phone: t.phone,
           signatureImage: t.signature_image,
           assignedClasses: (classes || []).map((c) => c.class_id),
+          additionalInfo: t.additional_info,
         }
       })
     )
@@ -347,6 +361,7 @@ export const TeachersStore = {
       phone: data.phone,
       signatureImage: data.signature_image,
       assignedClasses: (classes || []).map((c) => c.class_id),
+      additionalInfo: data.additional_info,
     }
   },
   
@@ -380,11 +395,12 @@ export const TeachersStore = {
       phone: data.phone,
       signatureImage: data.signature_image,
       assignedClasses: (classes || []).map((c) => c.class_id),
+      additionalInfo: data.additional_info,
     }
   },
   
   add: async (teacher: Omit<Teacher, "id" | "name" | "email" | "status">): Promise<Teacher> => {
-    const { assignedClasses, userId, phone, signatureImage } = teacher
+    const { assignedClasses, userId, phone, signatureImage, additionalInfo } = teacher
     
     // Insert into teachers table (only teacher-specific data)
     const { data, error } = await supabase
@@ -393,6 +409,7 @@ export const TeachersStore = {
         user_id: userId,
         phone: phone || null,
         signature_image: signatureImage || null,
+        additional_info: additionalInfo || {},
       }])
       .select()
       .single()
@@ -420,17 +437,19 @@ export const TeachersStore = {
       phone: data.phone,
       signatureImage: data.signature_image,
       assignedClasses: assignedClasses || [],
+      additionalInfo: data.additional_info,
     }
   },
   
   update: async (id: string, updates: Partial<Teacher>): Promise<void> => {
-    const { assignedClasses, name, email, status, userId, ...teacherUpdates } = updates
+    const { assignedClasses, name, email, status, userId, additionalInfo, ...teacherUpdates } = updates
     
     // Update teachers table (only teacher-specific fields)
-    if (Object.keys(teacherUpdates).length > 0) {
+    if (Object.keys(teacherUpdates).length > 0 || additionalInfo !== undefined) {
       const dbUpdates: any = {}
       if (teacherUpdates.phone !== undefined) dbUpdates.phone = teacherUpdates.phone
       if (teacherUpdates.signatureImage !== undefined) dbUpdates.signature_image = teacherUpdates.signatureImage
+      if (additionalInfo !== undefined) dbUpdates.additional_info = additionalInfo
       
       const { error } = await supabase
         .from("teachers")

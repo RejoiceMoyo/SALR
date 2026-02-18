@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { PasswordConfirmDialog } from "@/components/password-confirm-dialog"
+import { ImportExcelButton } from "@/components/import-excel-button"
 import {
   StudentsStore,
   ClassesStore,
@@ -299,6 +300,99 @@ export function StudentManagement() {
     setShowViewDialog(true)
   }
 
+  async function handleBulkImport(data: any[]) {
+    setSaving(true)
+    let successCount = 0
+    let skipCount = 0
+
+    try {
+      const standardFields = [
+        'student_number', 'id', 'student_id', 'no',
+        'first_name', 'firstname', 'name',
+        'last_name', 'lastname',
+        'class', 'class_name', 'grade', 'class_id',
+        'dob', 'date_of_birth', 'birthday',
+        'gender', 'sex',
+        'parent_name', 'parent_full_name', 'guardian_name',
+        'parent_phone', 'parent_contact', 'phone',
+        'address'
+      ]
+
+      for (const item of data) {
+        // Normalize keys
+        const row: any = {}
+        const additionalInfo: Record<string, any> = {}
+        
+        Object.keys(item).forEach(key => {
+          const normalizedKey = key.toLowerCase().replace(/\s+/g, '_')
+          row[normalizedKey] = item[key]
+          if (!standardFields.includes(normalizedKey)) {
+            additionalInfo[key] = item[key]
+          }
+        })
+
+        const studentNumber = row.student_number || row.id || row.student_id || row.no
+        const firstName = row.first_name || row.firstname || row.name?.split(' ')[0]
+        const lastName = row.last_name || row.lastname || row.name?.split(' ').slice(1).join(' ')
+        const classRef = row.class || row.class_name || row.grade || row.class_id
+        const dob = row.dob || row.date_of_birth || row.birthday
+        const gender = row.gender || row.sex
+        const parentName = row.parent_name || row.parent_full_name || row.guardian_name
+        const parentPhone = row.parent_phone || row.parent_contact || row.phone
+
+        if (!firstName || !lastName || !studentNumber) {
+          skipCount++
+          continue
+        }
+
+        // Check for duplicate student number
+        const duplicate = students.find((s) => s.studentNumber.toLowerCase() === String(studentNumber).toLowerCase())
+        if (duplicate) {
+          skipCount++
+          continue
+        }
+
+        // Try to find class by name
+        let finalClassId = ""
+        if (classRef) {
+          const foundClass = classes.find((c) => 
+            c.id === classRef || 
+            c.name.toLowerCase() === String(classRef).toLowerCase()
+          )
+          if (foundClass) finalClassId = foundClass.id
+        }
+
+        const payload: Omit<Student, "id"> = {
+          studentNumber: String(studentNumber),
+          firstName: String(firstName),
+          lastName: String(lastName),
+          classId: finalClassId,
+          dob: dob ? new Date(dob).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          gender: String(gender || "Other"),
+          address: String(row.address || ""),
+          status: "active",
+          parentContact: {
+            fullName: String(parentName || "Parent"),
+            relationship: "Parent",
+            phone: String(parentPhone || ""),
+          },
+          additionalInfo
+        }
+
+        await StudentsStore.add(payload)
+        successCount++
+      }
+      
+      toast.success(`Import complete: ${successCount} added, ${skipCount} skipped`)
+      loadData()
+    } catch (error) {
+      toast.error("Bulk import failed")
+      console.error(error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function getClassName(classId: string) {
     return classes.find((c) => c.id === classId)?.name || "Unassigned"
   }
@@ -321,10 +415,13 @@ export function StudentManagement() {
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={handleAdd} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Student
-          </Button>
+          <div className="flex gap-2">
+            <ImportExcelButton type="students" onImport={handleBulkImport} />
+            <Button onClick={handleAdd} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Student
+            </Button>
+          </div>
         )}
       </div>
 
@@ -747,7 +844,7 @@ function StudentViewDetails({ student, classes }: { student: Student; classes: S
                     )}
                   </>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No guardian on record</p>
+                  <p className="text-sm font-medium text-foreground">No guardian on record</p>
                 )}
               </div>
             </div>
