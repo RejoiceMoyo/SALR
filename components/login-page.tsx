@@ -52,7 +52,7 @@ export function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@school.com"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -84,13 +84,6 @@ export function LoginPage() {
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-          <div className="mt-6 rounded-md bg-muted p-3">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Demo Credentials:</p>
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-              <p><span className="font-medium text-foreground">Admin:</span> admin@school.com / admin123</p>
-              <p className="text-xs text-muted-foreground mt-1">Teachers use their system email and receive a random password when created by admin.</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
