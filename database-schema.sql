@@ -1,0 +1,244 @@
+-- SAMSP Database Schema for Supabase
+-- Copy and paste this entire file into Supabase SQL Editor
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Users table (includes both admin and teacher users)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'teacher')),
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'archived')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Teachers table (stores additional teacher-specific data only)
+-- Name and email are in users table - always join to get full teacher info
+CREATE TABLE teachers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  phone TEXT,
+  signature_image TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Classes table
+CREATE TABLE classes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Teacher-Class assignments (many-to-many)
+-- References users.id directly (not teachers.id) for consistency
+CREATE TABLE teacher_classes (
+  user_id UUID REFERENCES users(id) ON DELETE RESTRICT,
+  class_id UUID REFERENCES classes(id) ON DELETE RESTRICT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, class_id)
+);
+
+-- Students table
+CREATE TABLE students (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_number TEXT UNIQUE NOT NULL,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  class_id UUID REFERENCES classes(id) ON DELETE RESTRICT,
+  dob DATE NOT NULL,
+  gender TEXT NOT NULL,
+  address TEXT,
+  allergies TEXT,
+  medical_notes TEXT,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'archived')),
+  
+  -- Parent contact (embedded JSON)
+  parent_contact JSONB NOT NULL,
+  
+  -- Guardian contact (optional, embedded JSON)
+  guardian_contact JSONB,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Subjects table
+-- References users.id for teacher (not teachers.id) for consistency
+CREATE TABLE subjects (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  class_id UUID REFERENCES classes(id) ON DELETE RESTRICT,
+  teacher_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Grades table
+-- Keep historical records - prevent deletion of students/subjects with grades
+CREATE TABLE grades (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_id UUID REFERENCES students(id) ON DELETE RESTRICT,
+  subject_id UUID REFERENCES subjects(id) ON DELETE RESTRICT,
+  marks NUMERIC NOT NULL,
+  term TEXT NOT NULL,
+  comment TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Attendance table
+-- Keep historical records - prevent deletion of students with attendance
+CREATE TABLE attendance (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_id UUID REFERENCES students(id) ON DELETE RESTRICT,
+  class_id UUID REFERENCES classes(id) ON DELETE RESTRICT,
+  date DATE NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('present', 'absent', 'late', 'excused')),
+  comment TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(student_id, date)
+);
+
+-- Fees table
+-- Keep historical records - prevent deletion of students with fee records
+CREATE TABLE fees (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_id UUID REFERENCES students(id) ON DELETE RESTRICT,
+  term TEXT NOT NULL,
+  amount_due NUMERIC NOT NULL,
+  amount_paid NUMERIC NOT NULL DEFAULT 0,
+  balance NUMERIC GENERATED ALWAYS AS (amount_due - amount_paid) STORED,
+  receipt_number TEXT,
+  date DATE NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Templates table
+CREATE TABLE templates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  type TEXT NOT NULL CHECK (type IN ('report', 'certificate', 'receipt', 'indemnity')),
+  name TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Certificates table
+-- Keep historical records - student/template can be archived but certificate stays
+CREATE TABLE certificates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_id UUID REFERENCES students(id) ON DELETE RESTRICT,
+  type TEXT NOT NULL,
+  template_id UUID REFERENCES templates(id) ON DELETE SET NULL,
+  generated_date TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indemnity forms table
+-- Keep historical records
+CREATE TABLE indemnity_forms (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_id UUID REFERENCES students(id) ON DELETE RESTRICT,
+  template_id UUID REFERENCES templates(id) ON DELETE SET NULL,
+  content TEXT NOT NULL,
+  signed_by TEXT,
+  generated_date TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Term reports table
+-- Keep historical records - preserve who generated report even if user archived
+CREATE TABLE term_reports (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_id UUID REFERENCES students(id) ON DELETE RESTRICT,
+  class_id UUID REFERENCES classes(id) ON DELETE SET NULL,
+  term TEXT NOT NULL,
+  template_id UUID REFERENCES templates(id) ON DELETE SET NULL,
+  content TEXT NOT NULL,
+  comments TEXT,
+  generated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  generated_date TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create indexes for better query performance
+CREATE INDEX idx_students_class_id ON students(class_id);
+CREATE INDEX idx_students_status ON students(status);
+CREATE INDEX idx_grades_student_id ON grades(student_id);
+CREATE INDEX idx_grades_subject_id ON grades(subject_id);
+CREATE INDEX idx_attendance_student_id ON attendance(student_id);
+CREATE INDEX idx_attendance_date ON attendance(date);
+CREATE INDEX idx_fees_student_id ON fees(student_id);
+CREATE INDEX idx_subjects_class_id ON subjects(class_id);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE teachers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE grades ENABLE ROW LEVEL SECURITY;
+ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE certificates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE indemnity_forms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE term_reports ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies (Allow all for anon since we handle auth in the app)
+-- Note: We're not using Supabase Auth, just the database
+
+CREATE POLICY "Allow all for anon" ON users
+  FOR ALL USING (true);
+
+CREATE POLICY "Allow all for anon" ON teachers
+  FOR ALL USING (true);
+
+CREATE POLICY "Allow all for anon" ON classes
+  FOR ALL USING (true);
+
+CREATE POLICY "Allow all for anon" ON students
+  FOR ALL USING (true);
+
+CREATE POLICY "Allow all for anon" ON subjects
+  FOR ALL USING (true);
+
+CREATE POLICY "Allow all for anon" ON grades
+  FOR ALL USING (true);
+
+CREATE POLICY "Allow all for anon" ON attendance
+  FOR ALL USING (true);
+
+CREATE POLICY "Allow all for anon" ON fees
+  FOR ALL USING (true);
+
+CREATE POLICY "Allow all for anon" ON templates
+  FOR ALL USING (true);
+
+CREATE POLICY "Allow all for anon" ON certificates
+  FOR ALL USING (true);
+
+CREATE POLICY "Allow all for anon" ON indemnity_forms
+  FOR ALL USING (true);
+
+CREATE POLICY "Allow all for anon" ON term_reports
+  FOR ALL USING (true);
+
+-- Insert seed data
+-- Default admin user
+INSERT INTO users (name, role, email, password, status) VALUES
+  ('Tatenda Moyo', 'admin', 'admin@school.com', 'admin123', 'active'),
+  ('Rumbidzai Nyathi', 'teacher', 'teacher@school.com', 'teacher123', 'active');
+
+-- Get the user IDs for reference (you'll see these after running the query)
+-- Then you can manually insert the rest of the seed data or we'll do it via the app
