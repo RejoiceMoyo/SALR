@@ -207,7 +207,7 @@ export const StudentsStore = {
       ...toCamelCase(row),
       parentContact: row.parent_contact,
       guardianContact: row.guardian_contact,
-      additionalInfo: row.additional_info,
+      additionalInfo: row.additional_info || {},
     }))
   },
   
@@ -218,7 +218,7 @@ export const StudentsStore = {
       ...toCamelCase(data),
       parentContact: data.parent_contact,
       guardianContact: data.guardian_contact,
-      additionalInfo: data.additional_info,
+      additionalInfo: data.additional_info || {},
     } : null
   },
   
@@ -229,19 +229,30 @@ export const StudentsStore = {
       ...toCamelCase(row),
       parentContact: row.parent_contact,
       guardianContact: row.guardian_contact,
+      additionalInfo: row.additional_info || {},
     }))
   },
   
   add: async (student: Omit<Student, "id">): Promise<Student> => {
-    const dbRow = {
-      ...toSnakeCase(student),
+    const dbRow: any = {
+      student_number: student.studentNumber,
+      first_name: student.firstName,
+      last_name: student.lastName,
+      class_id: student.classId,
+      dob: student.dob,
+      gender: student.gender,
+      address: student.address,
+      allergies: student.allergies || null,
+      medical_notes: student.medicalNotes || null,
       parent_contact: student.parentContact,
-      guardian_contact: student.guardianContact,
-      additional_info: student.additionalInfo || {},
+      guardian_contact: student.guardianContact || null,
+      status: student.status,
     }
-    delete dbRow.parent_contact_camel
-    delete dbRow.guardian_contact_camel
-    delete dbRow.additional_info_camel
+    
+    // Only include additional_info if provided
+    if (student.additionalInfo && Object.keys(student.additionalInfo).length > 0) {
+      dbRow.additional_info = student.additionalInfo
+    }
     
     const { data, error } = await supabase
       .from("students")
@@ -253,7 +264,7 @@ export const StudentsStore = {
       ...toCamelCase(data),
       parentContact: data.parent_contact,
       guardianContact: data.guardian_contact,
-      additionalInfo: data.additional_info,
+      additionalInfo: data.additional_info || {},
     }
   },
   
@@ -324,7 +335,7 @@ export const TeachersStore = {
           phone: t.phone,
           signatureImage: t.signature_image,
           assignedClasses: (classes || []).map((c) => c.class_id),
-          additionalInfo: t.additional_info,
+          additionalInfo: t.additional_info || {},
         }
       })
     )
@@ -361,7 +372,7 @@ export const TeachersStore = {
       phone: data.phone,
       signatureImage: data.signature_image,
       assignedClasses: (classes || []).map((c) => c.class_id),
-      additionalInfo: data.additional_info,
+      additionalInfo: data.additional_info || {},
     }
   },
   
@@ -395,7 +406,7 @@ export const TeachersStore = {
       phone: data.phone,
       signatureImage: data.signature_image,
       assignedClasses: (classes || []).map((c) => c.class_id),
-      additionalInfo: data.additional_info,
+      additionalInfo: data.additional_info || {},
     }
   },
   
@@ -403,14 +414,20 @@ export const TeachersStore = {
     const { assignedClasses, userId, phone, signatureImage, additionalInfo } = teacher
     
     // Insert into teachers table (only teacher-specific data)
+    const dbRow: any = {
+      user_id: userId,
+      phone: phone || null,
+      signature_image: signatureImage || null,
+    }
+    
+    // Only include additional_info if provided
+    if (additionalInfo && Object.keys(additionalInfo).length > 0) {
+      dbRow.additional_info = additionalInfo
+    }
+    
     const { data, error } = await supabase
       .from("teachers")
-      .insert([{
-        user_id: userId,
-        phone: phone || null,
-        signature_image: signatureImage || null,
-        additional_info: additionalInfo || {},
-      }])
+      .insert([dbRow])
       .select()
       .single()
     if (error) throw error
@@ -437,7 +454,7 @@ export const TeachersStore = {
       phone: data.phone,
       signatureImage: data.signature_image,
       assignedClasses: assignedClasses || [],
-      additionalInfo: data.additional_info,
+      additionalInfo: data.additional_info || {},
     }
   },
   

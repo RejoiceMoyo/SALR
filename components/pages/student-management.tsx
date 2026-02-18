@@ -886,70 +886,135 @@ function StudentViewDetails({ student, classes }: { student: Student; classes: S
       <TabsContent value="profile">
         <ScrollArea className="h-[55vh]">
           <div className="flex flex-col gap-5 pr-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Student Name</p>
-                <p className="text-sm font-medium text-foreground">{studentFullName(student)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Student No</p>
-                <p className="text-sm font-medium text-foreground">{student.studentNumber}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Class</p>
-                <p className="text-sm font-medium text-foreground">{cls?.name || "Unassigned"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Date of Birth</p>
-                <p className="text-sm font-medium text-foreground">{student.dob || "N/A"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Gender</p>
-                <p className="text-sm font-medium text-foreground">{student.gender || "N/A"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Address</p>
-                <p className="text-sm font-medium text-foreground">{student.address || "N/A"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Allergies</p>
-                <p className="text-sm font-medium text-foreground">{student.allergies || "None reported"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Medical Notes</p>
-                <p className="text-sm font-medium text-foreground">{student.medicalNotes || "N/A"}</p>
+            {/* Basic Info */}
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-2">BASIC INFORMATION</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Student Number</p>
+                  <p className="text-sm font-medium text-foreground">{student.studentNumber}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">First Name</p>
+                  <p className="text-sm font-medium text-foreground">{student.firstName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Last Name</p>
+                  <p className="text-sm font-medium text-foreground">{student.lastName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Class</p>
+                  <p className="text-sm font-medium text-foreground">{cls?.name || "Unassigned"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Gender</p>
+                  <p className="text-sm font-medium text-foreground">{student.gender || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Date of Birth</p>
+                  <p className="text-sm font-medium text-foreground">{student.dob || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="text-sm font-medium text-foreground capitalize">{student.status}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Address</p>
+                  <p className="text-sm font-medium text-foreground">{student.address || "N/A"}</p>
+                </div>
               </div>
             </div>
 
+            {/* Health & Safety */}
             <div className="border-t pt-4">
-              <p className="text-xs font-semibold text-muted-foreground mb-3">CONTACTS</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Parent</p>
-                  <p className="text-sm font-semibold text-foreground">{student.parentContact.fullName}</p>
-                  <p className="text-xs text-muted-foreground">{student.parentContact.relationship}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Phone: {student.parentContact.phone || "N/A"}</p>
-                  {student.parentContact.email && (
-                    <p className="text-xs text-muted-foreground">Email: {student.parentContact.email}</p>
-                  )}
+              <p className="text-xs font-semibold text-muted-foreground mb-2">HEALTH & SAFETY</p>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="rounded-lg border bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900 p-3">
+                  <p className="text-xs font-semibold text-amber-900 dark:text-amber-200 mb-1">Allergies</p>
+                  <p className="text-sm text-amber-800 dark:text-amber-300">{student.allergies || "None reported"}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Guardian</p>
-                  {guardian ? (
-                    <>
-                      <p className="text-sm font-semibold text-foreground">{guardian.fullName}</p>
-                      <p className="text-xs text-muted-foreground">{guardian.relationship}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Phone: {guardian.phone || "N/A"}</p>
-                      {guardian.email && (
-                        <p className="text-xs text-muted-foreground">Email: {guardian.email}</p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-sm font-medium text-foreground">No guardian on record</p>
-                  )}
+                <div className="rounded-lg border bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900 p-3">
+                  <p className="text-xs font-semibold text-blue-900 dark:text-blue-200 mb-1">Medical Notes</p>
+                  <p className="text-sm text-blue-800 dark:text-blue-300">{student.medicalNotes || "No medical notes on file"}</p>
                 </div>
               </div>
             </div>
+
+            {/* Contacts */}
+            <div className="border-t pt-4">
+              <p className="text-xs font-semibold text-muted-foreground mb-3">CONTACTS</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Mother</p>
+                  <p className="text-xs text-muted-foreground mt-2">📞 {student.additionalInfo?.mom_no || student.parentContact.phone || "N/A"}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Father</p>
+                  <p className="text-xs text-muted-foreground mt-2">📞 {student.additionalInfo?.dad_phone || "N/A"}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Guardian</p>
+                  <p className="text-xs text-muted-foreground mt-2">📞 {guardian?.phone || student.additionalInfo?.guardian_number || "N/A"}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Emergency Contact</p>
+                  <p className="text-xs text-muted-foreground mt-2">📞 {student.additionalInfo?.emergency_contact || "N/A"}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Parent/Guardian Details */}
+            <div className="border-t pt-4">
+              <p className="text-xs font-semibold text-muted-foreground mb-3">PRIMARY CONTACT</p>
+              <div className="rounded-lg border p-4">
+                <p className="text-xs text-muted-foreground">Name</p>
+                <p className="text-sm font-semibold text-foreground">{student.parentContact.fullName}</p>
+                <p className="text-xs text-muted-foreground mt-2">Relationship</p>
+                <p className="text-sm font-medium text-foreground">{student.parentContact.relationship}</p>
+                <p className="text-xs text-muted-foreground mt-2">Phone</p>
+                <p className="text-sm font-medium text-foreground">{student.parentContact.phone || "N/A"}</p>
+                {student.parentContact.email && (
+                  <>
+                    <p className="text-xs text-muted-foreground mt-2">Email</p>
+                    <p className="text-sm font-medium text-foreground">{student.parentContact.email}</p>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Guardian Details (if exists) */}
+            {guardian && (
+              <div className="border-t pt-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-3">GUARDIAN</p>
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs text-muted-foreground">Name</p>
+                  <p className="text-sm font-semibold text-foreground">{guardian.fullName}</p>
+                  <p className="text-xs text-muted-foreground mt-2">Relationship</p>
+                  <p className="text-sm font-medium text-foreground">{guardian.relationship}</p>
+                  <p className="text-xs text-muted-foreground mt-2">Phone</p>
+                  <p className="text-sm font-medium text-foreground">{guardian.phone || "N/A"}</p>
+                  {guardian.email && (
+                    <>
+                      <p className="text-xs text-muted-foreground mt-2">Email</p>
+                      <p className="text-sm font-medium text-foreground">{guardian.email}</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Driver Info */}
+            {(student.additionalInfo?.driver_name || student.additionalInfo?.driver_contact) && (
+              <div className="border-t pt-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-3">DRIVER INFORMATION</p>
+                <div className="rounded-lg border p-4">
+                  <p className="text-xs text-muted-foreground">Driver Name</p>
+                  <p className="text-sm font-medium text-foreground">{student.additionalInfo?.driver_name || "N/A"}</p>
+                  <p className="text-xs text-muted-foreground mt-2">Driver Contact</p>
+                  <p className="text-sm font-medium text-foreground">{student.additionalInfo?.driver_contact || "N/A"}</p>
+                </div>
+              </div>
+            )}
           </div>
         </ScrollArea>
       </TabsContent>
